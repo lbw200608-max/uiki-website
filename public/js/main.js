@@ -257,11 +257,6 @@ const initCircularText = () => {
       context.restore();
     });
 
-    context.beginPath();
-    context.arc(0, 0, radius * 0.68, 0, Math.PI * 2);
-    context.strokeStyle = 'rgba(167, 139, 250, .42)';
-    context.lineWidth = 1;
-    context.stroke();
     context.font = `900 ${Math.max(28, Math.min(54, radius * 0.45))}px system-ui, sans-serif`;
     context.fillStyle = '#f5f4f6';
     context.shadowColor = 'rgba(219, 1, 231, .58)';
@@ -346,24 +341,6 @@ const initAeroShards = () => {
     const seconds = time * 0.001;
     const streamSpeed = reducedMotion ? 0 : seconds * 0.055;
 
-    context.save();
-    context.globalCompositeOperation = 'screen';
-    context.lineCap = 'round';
-    for (let stream = 0; stream < 4; stream += 1) {
-      context.beginPath();
-      for (let point = 0; point <= 20; point += 1) {
-        const progress = point / 20;
-        const x = width * (0.5 + Math.sin(progress * 4.4 + stream * 1.7 + seconds * 0.22) * 0.23);
-        const y = height * (progress * 1.2 - 0.1);
-        if (point === 0) context.moveTo(x, y); else context.lineTo(x, y);
-      }
-      context.strokeStyle = stream % 2 ? 'rgba(168, 85, 247, .08)' : 'rgba(137, 106, 189, .12)';
-      context.lineWidth = width * 0.035;
-      context.shadowColor = '#A855F7';
-      context.shadowBlur = 26;
-      context.stroke();
-    }
-
     shards.forEach((shard, index) => {
       const progress = (shard.phase + streamSpeed) % 1.2 - 0.1;
       const turbulence = reducedMotion ? 0 : Math.sin(seconds * 0.9 + shard.offset) * 0.035;
@@ -414,8 +391,6 @@ const initAeroShards = () => {
       context.stroke();
     });
     while (ripples.length && ripples[0].age >= 1.2) ripples.shift();
-    context.restore();
-
     if (!reducedMotion) frame = window.requestAnimationFrame(draw);
   };
 
