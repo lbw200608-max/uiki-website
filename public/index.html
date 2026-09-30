@@ -58,13 +58,14 @@
             <p class="hero-placeholder-copy">图片暂留空。建议放：Uiki 正面 3D 渲染图，突出方形 OLED 屏幕和柔和灯光。</p>
           </div>
           <div class="hero-media-grid" aria-hidden="true"></div>
+          <span class="hero-scanner" aria-hidden="true"></span>
           <span class="hero-media-label">CONCEPT VISUAL / IMAGE SLOT A</span>
           <span class="hero-media-note">图片留空 / 建议：Uiki 正面 3D 渲染图</span>
         </div>
         <div class="hero-scrim" aria-hidden="true"></div>
         <div class="hero-content">
           <p class="eyebrow" data-hero-kicker></p>
-          <h1 id="hero-title" data-hero-title></h1>
+          <h1 id="hero-title" data-hero-title><canvas class="particle-text-canvas" data-particle-text aria-label="UiKi"></canvas><span class="sr-only">UiKi</span></h1>
           <p class="hero-copy" data-hero-copy></p>
           <div class="hero-actions"><button class="button primary" type="button" data-auth-open="start"><span class="button-icon" aria-hidden="true">↗</span>开始体验</button><a class="button secondary" href="#device"><span class="button-icon" aria-hidden="true">⌁</span>绑定设备</a></div>
           <div class="hero-footnote"><span class="status-light"></span><span>Prototype online / Uiki v1.0</span></div>
@@ -137,6 +138,6 @@
 
     <footer class="site-footer"><span><strong>Uiki</strong> / AI 情绪陪伴桌宠</span><span data-footer-year></span></footer>
 
-    <dialog class="auth-dialog" data-auth-dialog aria-labelledby="auth-title"><form class="auth-card" method="dialog" data-auth-form><div class="panel-topline"><span class="panel-kicker">DEMO ACCOUNT</span><button class="dialog-close" type="button" data-auth-close aria-label="关闭登录窗口">×</button></div><p class="eyebrow">Uiki v1.0</p><h2 id="auth-title">进入你的陪伴空间</h2><p class="dialog-copy">第一版只模拟注册和登录，不创建真实账号。</p><label class="field"><span>昵称</span><input type="text" data-auth-name placeholder="例如：Liu" required /></label><label class="field"><span>邮箱</span><input type="email" data-auth-email placeholder="you@example.com" required /></label><label class="auth-consent"><input type="checkbox" data-auth-consent required />我已阅读隐私说明</label><button class="button primary" type="submit"><span class="button-icon" aria-hidden="true">↗</span>保存演示账号</button><p class="device-hint" data-auth-status>信息只保存在当前浏览器。</p></form></dialog>
+    <dialog class="auth-dialog" data-auth-dialog aria-labelledby="auth-title"><form class="auth-card" method="dialog" data-auth-form><div class="panel-topline"><span class="panel-kicker">DEMO ACCOUNT</span><button class="dialog-close" type="button" data-auth-close aria-label="关闭登录窗口">×</button></div><p class="eyebrow">Uiki v1.0</p><h2 id="auth-title">进入你的陪伴空间</h2><p class="dialog-copy">第一版只模拟注册和登录，不创建真实账号。</p><label class="field"><span>昵称</span><input type="text" data-auth-name placeholder="例如：Liu" required /></label><label class="field auth-email-field"><span>邮箱</span><input type="email" data-auth-email placeholder="you@example.com" required /></label><label class="auth-consent"><input type="checkbox" data-auth-consent required />我已阅读隐私说明</label><button class="button primary" type="submit"><span class="button-icon" aria-hidden="true">↗</span>保存演示账号</button><p class="device-hint" data-auth-status>信息只保存在当前浏览器。</p></form></dialog>
   </body>
 </html>

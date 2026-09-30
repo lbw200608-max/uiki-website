@@ -181,15 +181,105 @@ const initHeader = () => {
 };
 
 const initNavigation = () => {
-  document.querySelectorAll('.site-nav a[href^="#"]').forEach((link) => {
+  const links = [...document.querySelectorAll('.site-nav a[href^="#"]')];
+  const paintActive = (hash) => links.forEach((link) => {
+    const active = link.getAttribute('href') === (hash || '#home');
+    link.toggleAttribute('aria-current', active);
+  });
+
+  paintActive(window.location.hash || '#home');
+  window.addEventListener('hashchange', () => paintActive(window.location.hash || '#home'));
+  links.forEach((link) => {
     link.addEventListener('click', (event) => {
       const target = document.querySelector(link.getAttribute('href'));
       if (!target) return;
       event.preventDefault();
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      window.history.replaceState(null, '', link.getAttribute('href'));
+      const hash = link.getAttribute('href');
+      paintActive(hash);
+      window.history.replaceState(null, '', hash);
     });
   });
+};
+
+const initParticleText = () => {
+  const canvas = document.querySelector('[data-particle-text]');
+  if (!canvas) return;
+  const context = canvas.getContext('2d');
+  if (!context) return;
+
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  let particles = [];
+  let width = 0;
+  let height = 0;
+  let frame = 0;
+
+  const rebuild = () => {
+    const bounds = canvas.getBoundingClientRect();
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    width = Math.max(240, Math.round(bounds.width));
+    height = Math.max(120, Math.round(bounds.height));
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    const mask = document.createElement('canvas');
+    mask.width = width;
+    mask.height = height;
+    const maskContext = mask.getContext('2d');
+    if (!maskContext) return;
+
+    const fontSize = Math.min(height * 0.78, width * 0.27);
+    maskContext.fillStyle = '#fff';
+    maskContext.font = `900 ${fontSize}px system-ui, sans-serif`;
+    maskContext.textBaseline = 'middle';
+    const text = 'UiKi';
+    const textWidth = maskContext.measureText(text).width;
+    maskContext.fillText(text, (width - textWidth) / 2, height * 0.54);
+
+    const pixels = maskContext.getImageData(0, 0, width, height).data;
+    const targets = [];
+    for (let y = 0; y < height; y += 4) {
+      for (let x = 0; x < width; x += 4) {
+        if (pixels[(y * width + x) * 4 + 3] > 120) targets.push({ x, y });
+      }
+    }
+
+    const stride = Math.max(1, Math.ceil(targets.length / 1800));
+    particles = targets.filter((_, index) => index % stride === 0).map(({ x, y }) => ({
+      x: x + (Math.random() - 0.5) * 34,
+      y: y + (Math.random() - 0.5) * 34,
+      targetX: x,
+      targetY: y,
+      phase: Math.random() * Math.PI * 2,
+      size: 0.7 + Math.random() * 1.2,
+    }));
+  };
+
+  const draw = (time = 0) => {
+    context.clearRect(0, 0, width, height);
+    particles.forEach((particle, index) => {
+      particle.x += (particle.targetX - particle.x) * 0.08;
+      particle.y += (particle.targetY - particle.y) * 0.08;
+      const drift = reducedMotion ? 0 : Math.sin(time * 0.0016 + particle.phase) * 1.1;
+      const alpha = 0.64 + (Math.sin(time * 0.002 + index) + 1) * 0.16;
+      context.beginPath();
+      context.fillStyle = index % 7 === 0 ? `rgba(255, 248, 255, ${alpha})` : `rgba(202, 181, 255, ${alpha})`;
+      context.arc(particle.x + drift, particle.y + drift * 0.45, particle.size, 0, Math.PI * 2);
+      context.fill();
+    });
+    if (!reducedMotion) frame = window.requestAnimationFrame(draw);
+  };
+
+  const render = () => {
+    window.cancelAnimationFrame(frame);
+    rebuild();
+    draw();
+  };
+
+  if (window.ResizeObserver) new ResizeObserver(render).observe(canvas);
+  else window.addEventListener('resize', render, { passive: true });
+  render();
 };
 
 const initClickSpark = () => {
@@ -257,6 +347,7 @@ const initDemoAuth = () => {
   })();
 
   const open = () => {
+    form.classList.remove('is-authenticated');
     if (saved && nameInput && emailInput) {
       nameInput.value = saved.name || '';
       emailInput.value = saved.email || '';
@@ -271,8 +362,9 @@ const initDemoAuth = () => {
     const user = { name: nameInput?.value.trim(), email: emailInput?.value.trim() };
     localStorage.setItem('uiki-demo-user', JSON.stringify(user));
     saved = user;
-    if (status) status.textContent = `演示账号已保存：${user.name}`;
-    window.setTimeout(() => { dialog.close(); document.querySelector('#ai')?.scrollIntoView({ behavior: 'smooth' }); }, 240);
+    form.classList.add('is-authenticated');
+    if (status) status.textContent = `登录成功：${user.email}`;
+    window.setTimeout(() => { dialog.close(); document.querySelector('#ai')?.scrollIntoView({ behavior: 'smooth' }); }, 1000);
   });
 };
 
@@ -281,7 +373,7 @@ const init = () => {
 
   setText('owner-name', data.ownerName);
   setText('hero-kicker', data.hero.kicker);
-  setText('hero-title', data.hero.title);
+  initParticleText();
   setText('hero-copy', data.hero.copy);
   setText('about-primary', data.about.primary);
   setText('about-secondary', data.about.secondary);
