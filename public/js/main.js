@@ -202,81 +202,84 @@ const initNavigation = () => {
   });
 };
 
-const initStrokeText = () => {
-  const canvas = document.querySelector('[data-stroke-text]');
+const initCircularText = () => {
+  const canvas = document.querySelector('[data-circular-text]');
   if (!canvas) return;
   const context = canvas.getContext('2d');
   if (!context) return;
 
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const text = 'UiKi';
-  const strokeColor = '#A78BFA';
-  const fillColor = '#f5f4f6';
-  const drawDuration = 1600;
-  const fillDelay = 200;
-  const stagger = 50;
-  const letterSpacing = -4;
-  let letters = [];
+  const text = 'UiKi*UiKi*UiKi*';
+  const spinDuration = 20000;
+  const chars = [...text];
   let width = 0;
   let height = 0;
+  let angle = 0;
+  let lastTime = performance.now();
+  let hover = false;
   let frame = 0;
 
-  const rebuild = () => {
+  const resize = () => {
     const bounds = canvas.getBoundingClientRect();
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    width = Math.max(240, Math.round(bounds.width));
-    height = Math.max(120, Math.round(bounds.height));
+    width = Math.max(220, Math.round(bounds.width));
+    height = Math.max(180, Math.round(bounds.height));
     canvas.width = width * ratio;
     canvas.height = height * ratio;
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
-
-    const fontSize = Math.min(128, height * 0.84, width * 0.29);
-    context.font = `800 ${fontSize}px system-ui, sans-serif`;
-    context.textBaseline = 'middle';
-    const widths = [...text].map((letter) => context.measureText(letter).width);
-    const totalWidth = widths.reduce((sum, letterWidth) => sum + letterWidth, 0) + letterSpacing * (text.length - 1);
-    let x = (width - totalWidth) / 2;
-    letters = [...text].map((letter, index) => {
-      const item = { letter, x, width: widths[index], index };
-      x += widths[index] + letterSpacing;
-      return item;
-    });
   };
 
   const draw = (time = 0) => {
+    const delta = time - lastTime;
+    lastTime = time;
+    if (!reducedMotion) angle += delta * (Math.PI * 2 / spinDuration) * (hover ? 4 : 1);
     context.clearRect(0, 0, width, height);
-    const elapsed = reducedMotion ? drawDuration + fillDelay : Math.min(time - startTime, drawDuration + 500);
-    context.font = `800 ${Math.min(128, height * 0.84, width * 0.29)}px system-ui, sans-serif`;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) * 0.36;
+    const fontSize = Math.max(14, Math.min(28, radius * 0.2));
+
+    context.save();
+    context.translate(centerX, centerY);
+    context.font = `800 ${fontSize}px system-ui, sans-serif`;
+    context.textAlign = 'center';
     context.textBaseline = 'middle';
-    letters.forEach(({ letter, x, width: letterWidth, index }) => {
-      const progress = Math.max(0, Math.min(1, (elapsed - index * stagger) / drawDuration));
-      const eased = 1 - Math.pow(1 - progress, 2);
-      const fillProgress = Math.max(0, Math.min(1, (elapsed - index * stagger - fillDelay) / 550));
+    chars.forEach((char, index) => {
+      const currentAngle = angle + index / chars.length * Math.PI * 2 - Math.PI / 2;
       context.save();
-      context.lineWidth = 1.4;
-      context.strokeStyle = strokeColor;
-      context.globalAlpha = eased;
-      context.strokeText(letter, x, height * 0.54);
-      if (fillProgress > 0) {
-        context.beginPath();
-        context.rect(x - 4, 0, letterWidth * fillProgress + 8, height);
-        context.clip();
-        context.fillStyle = fillColor;
-        context.globalAlpha = fillProgress;
-        context.fillText(letter, x, height * 0.54);
-      }
+      context.rotate(currentAngle);
+      context.translate(0, -radius);
+      context.rotate(Math.PI / 2);
+      context.fillStyle = index % 3 === 0 ? '#f5f4f6' : '#cdb7ff';
+      context.shadowColor = 'rgba(219, 1, 231, .72)';
+      context.shadowBlur = 12;
+      context.fillText(char, 0, 0);
       context.restore();
     });
-    if (!reducedMotion && elapsed < drawDuration + 500) frame = window.requestAnimationFrame(draw);
+
+    context.beginPath();
+    context.arc(0, 0, radius * 0.68, 0, Math.PI * 2);
+    context.strokeStyle = 'rgba(167, 139, 250, .42)';
+    context.lineWidth = 1;
+    context.stroke();
+    context.font = `900 ${Math.max(28, Math.min(54, radius * 0.45))}px system-ui, sans-serif`;
+    context.fillStyle = '#f5f4f6';
+    context.shadowColor = 'rgba(219, 1, 231, .58)';
+    context.shadowBlur = 22;
+    context.fillText('UiKi', 0, 0);
+    context.restore();
+
+    if (!reducedMotion) frame = window.requestAnimationFrame(draw);
   };
 
-  let startTime = 0;
+  canvas.addEventListener('pointerenter', () => { hover = true; });
+  canvas.addEventListener('pointerleave', () => { hover = false; });
 
   const render = () => {
     window.cancelAnimationFrame(frame);
-    rebuild();
-    startTime = performance.now();
-    draw(reducedMotion ? drawDuration : 0);
+    resize();
+    lastTime = performance.now();
+    draw(lastTime);
   };
 
   if (window.ResizeObserver) new ResizeObserver(render).observe(canvas);
@@ -284,15 +287,23 @@ const initStrokeText = () => {
   render();
 };
 
-const initLightRays = () => {
-  const canvas = document.querySelector('[data-light-rays]');
-  const host = canvas?.closest('.hero-media');
+const initFerrofluid = () => {
+  const canvas = document.querySelector('[data-ferrofluid]');
+  const host = canvas?.closest('.hero-media-placeholder');
   if (!canvas || !host) return;
   const context = canvas.getContext('2d');
   if (!context) return;
 
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const pointer = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
+  const blobs = [
+    { x: .18, y: .16, radius: .28, scaleX: 1.1, scaleY: .72, phase: .2, color: 'rgba(67, 3, 73, .92)' },
+    { x: .48, y: .04, radius: .34, scaleX: .8, scaleY: .64, phase: 1.1, color: 'rgba(219, 1, 231, .75)' },
+    { x: .82, y: .2, radius: .3, scaleX: 1.16, scaleY: .66, phase: 2.5, color: 'rgba(46, 7, 64, .96)' },
+    { x: .3, y: .58, radius: .34, scaleX: .74, scaleY: 1.12, phase: 3.2, color: 'rgba(219, 1, 231, .62)' },
+    { x: .7, y: .55, radius: .27, scaleX: 1.18, scaleY: .72, phase: 4.1, color: 'rgba(67, 3, 73, .9)' },
+    { x: .52, y: .92, radius: .4, scaleX: .9, scaleY: .56, phase: 5.2, color: 'rgba(46, 7, 64, .98)' },
+  ];
   let width = 0;
   let height = 0;
   let frame = 0;
@@ -304,8 +315,6 @@ const initLightRays = () => {
     height = Math.max(1, Math.round(bounds.height));
     canvas.width = width * ratio;
     canvas.height = height * ratio;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
   };
 
@@ -314,34 +323,55 @@ const initLightRays = () => {
     pointer.targetX = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
     pointer.targetY = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
   }, { passive: true });
+  host.addEventListener('pointerleave', () => {
+    pointer.targetX = 0.5;
+    pointer.targetY = 0.5;
+  }, { passive: true });
 
   const draw = (time = 0) => {
     pointer.x += (pointer.targetX - pointer.x) * 0.1;
     pointer.y += (pointer.targetY - pointer.y) * 0.1;
     context.clearRect(0, 0, width, height);
+    context.fillStyle = '#2e0740';
+    context.fillRect(0, 0, width, height);
     context.globalCompositeOperation = 'screen';
 
-    const originX = width * (0.5 + (pointer.x - 0.5) * 0.1);
-    for (let index = -7; index <= 7; index += 1) {
-      const ratio = index / 7;
-      const wave = reducedMotion ? 0 : Math.sin(time * 0.0007 + index * 1.7) * width * 0.012;
-      const startX = originX + index * width * 0.012;
-      const endX = originX + ratio * width * 0.68 + wave + (pointer.x - 0.5) * width * 0.1;
-      const rayWidth = width * (0.018 + (1 - Math.abs(ratio)) * 0.018);
-      const gradient = context.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, 'rgba(224, 9, 227, 0.02)');
-      gradient.addColorStop(0.28, 'rgba(224, 9, 227, 0.2)');
-      gradient.addColorStop(0.82, 'rgba(167, 139, 250, 0.06)');
-      gradient.addColorStop(1, 'rgba(224, 9, 227, 0)');
+    blobs.forEach((blob, index) => {
+      const flow = reducedMotion ? 0 : (time * 0.000035 * 0.5) % 1.35;
+      const noise = reducedMotion ? 0 : Math.sin(time * 0.00045 + blob.phase) * 0.06;
+      const distance = Math.hypot(pointer.x - blob.x, pointer.y - blob.y);
+      const influence = Math.max(0, 1 - distance / 0.3) * 0.1;
+      const centerX = width * (blob.x + (pointer.x - 0.5) * influence + noise * 0.3);
+      const centerY = height * (((blob.y + flow + noise) % 1.35) - 0.14 + (pointer.y - 0.5) * influence);
+      const radius = Math.min(width, height) * blob.radius;
+
+      context.save();
+      context.translate(centerX, centerY);
+      context.rotate(noise * 1.8);
+      context.scale(blob.scaleX, blob.scaleY);
+      const gradient = context.createRadialGradient(0, 0, radius * 0.02, 0, 0, radius);
+      gradient.addColorStop(0, blob.color);
+      gradient.addColorStop(0.38, index % 2 ? 'rgba(219, 1, 231, .36)' : 'rgba(67, 3, 73, .5)');
+      gradient.addColorStop(0.78, 'rgba(46, 7, 64, .34)');
+      gradient.addColorStop(1, 'rgba(46, 7, 64, 0)');
       context.fillStyle = gradient;
+      context.shadowColor = 'rgba(219, 1, 231, .34)';
+      context.shadowBlur = radius * 0.28 * 2;
       context.beginPath();
-      context.moveTo(startX - rayWidth * 0.24, 0);
-      context.lineTo(startX + rayWidth * 0.24, 0);
-      context.lineTo(endX + rayWidth, height * (1.05 + pointer.y * 0.08));
-      context.lineTo(endX - rayWidth, height * (1.05 + pointer.y * 0.08));
+      for (let point = 0; point <= 28; point += 1) {
+        const radians = point / 28 * Math.PI * 2;
+        const edgeNoise = 1 + Math.sin(radians * 3 + blob.phase + time * 0.00035) * 0.08;
+        const x = Math.cos(radians) * radius * edgeNoise;
+        const y = Math.sin(radians) * radius * edgeNoise;
+        if (point === 0) context.moveTo(x, y); else context.lineTo(x, y);
+      }
       context.closePath();
       context.fill();
-    }
+      context.lineWidth = Math.max(1, radius * 0.035);
+      context.strokeStyle = 'rgba(244, 205, 255, .3)';
+      context.stroke();
+      context.restore();
+    });
 
     context.globalCompositeOperation = 'source-over';
     if (!reducedMotion) frame = window.requestAnimationFrame(draw);
@@ -447,8 +477,8 @@ const init = () => {
 
   setText('owner-name', data.ownerName);
   setText('hero-kicker', data.hero.kicker);
-  initStrokeText();
-  initLightRays();
+  initCircularText();
+  initFerrofluid();
   setText('hero-copy', data.hero.copy);
   setText('about-primary', data.about.primary);
   setText('about-secondary', data.about.secondary);
