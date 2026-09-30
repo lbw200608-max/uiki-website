@@ -192,6 +192,28 @@ const initNavigation = () => {
   });
 };
 
+const initClickSpark = () => {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+  document.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+
+    const spark = document.createElement('span');
+    spark.className = 'click-spark';
+    spark.style.left = `${event.clientX}px`;
+    spark.style.top = `${event.clientY}px`;
+
+    for (let index = 0; index < 8; index += 1) {
+      const ray = document.createElement('i');
+      ray.style.setProperty('--angle', `${index * 45}deg`);
+      spark.append(ray);
+    }
+
+    document.body.append(spark);
+    window.setTimeout(() => spark.remove(), 560);
+  });
+};
+
 const initHeroInteraction = () => {
   const stage = document.querySelector('[data-hero-stage]');
   if (!stage) return;
@@ -283,6 +305,7 @@ const init = () => {
 initPageLoader();
 initHeader();
 initNavigation();
+initClickSpark();
 initHeroInteraction();
 initDemoAuth();
 init();
