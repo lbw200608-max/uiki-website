@@ -1462,7 +1462,7 @@ main { width: min(1240px, calc(100% - 40px)); }
   .hero-content { background: linear-gradient(180deg, rgba(7,7,17,.08), rgba(7,7,17,.76) 62%); }
 }
 
-/* Product interaction layer: pill navigation, CircularText word, Ferrofluid background. */
+/* Product interaction layer: pill navigation, CircularText word, AeroShards background. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1504,12 +1504,12 @@ main { width: min(1240px, calc(100% - 40px)); }
 
 .circular-text-canvas {
   display: block;
-  width: min(100%, 360px);
-  height: 280px;
+  width: min(100%, 420px);
+  height: 300px;
   filter: drop-shadow(0 0 22px rgba(219, 1, 231, .25));
 }
 
-.ferrofluid-canvas {
+.aero-shards-canvas {
   position: absolute;
   z-index: 1;
   inset: 0;
@@ -1517,7 +1517,7 @@ main { width: min(1240px, calc(100% - 40px)); }
   height: 100%;
   pointer-events: none;
   opacity: 1;
-  mix-blend-mode: screen;
+  background: #120f17;
 }
 
 .hero-device-stage,
@@ -1527,7 +1527,7 @@ main { width: min(1240px, calc(100% - 40px)); }
 @media (max-width: 720px) {
   .site-nav { gap: 3px; padding: 4px; }
   .site-nav a { flex: 0 0 auto; padding: 0 11px; }
-  .circular-text-canvas { width: min(100%, 280px); height: 240px; }
+  .circular-text-canvas { width: min(100%, 300px); height: 250px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

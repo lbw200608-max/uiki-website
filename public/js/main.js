@@ -236,8 +236,8 @@ const initCircularText = () => {
     context.clearRect(0, 0, width, height);
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) * 0.36;
-    const fontSize = Math.max(14, Math.min(28, radius * 0.2));
+    const radius = Math.min(width, height) * 0.38;
+    const fontSize = Math.max(20, Math.min(38, radius * 0.3));
 
     context.save();
     context.translate(centerX, centerY);
@@ -287,23 +287,24 @@ const initCircularText = () => {
   render();
 };
 
-const initFerrofluid = () => {
-  const canvas = document.querySelector('[data-ferrofluid]');
+const initAeroShards = () => {
+  const canvas = document.querySelector('[data-aero-shards]');
   const host = canvas?.closest('.hero-media-placeholder');
   if (!canvas || !host) return;
   const context = canvas.getContext('2d');
   if (!context) return;
 
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const pointer = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
-  const blobs = [
-    { x: .18, y: .16, radius: .28, scaleX: 1.1, scaleY: .72, phase: .2, color: 'rgba(67, 3, 73, .92)' },
-    { x: .48, y: .04, radius: .34, scaleX: .8, scaleY: .64, phase: 1.1, color: 'rgba(219, 1, 231, .75)' },
-    { x: .82, y: .2, radius: .3, scaleX: 1.16, scaleY: .66, phase: 2.5, color: 'rgba(46, 7, 64, .96)' },
-    { x: .3, y: .58, radius: .34, scaleX: .74, scaleY: 1.12, phase: 3.2, color: 'rgba(219, 1, 231, .62)' },
-    { x: .7, y: .55, radius: .27, scaleX: 1.18, scaleY: .72, phase: 4.1, color: 'rgba(67, 3, 73, .9)' },
-    { x: .52, y: .92, radius: .4, scaleX: .9, scaleY: .56, phase: 5.2, color: 'rgba(46, 7, 64, .98)' },
-  ];
+  const pointer = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5, active: false, hold: false };
+  const ripples = [];
+  const shards = Array.from({ length: 126 }, (_, index) => ({
+    phase: index / 126 + Math.random() * 0.08,
+    offset: Math.random() * Math.PI * 2,
+    length: 10 + Math.random() * 22,
+    width: 2 + Math.random() * 5,
+    depth: 0.55 + Math.random() * 0.9,
+    tilt: (Math.random() - 0.5) * 0.6,
+  }));
   let width = 0;
   let height = 0;
   let frame = 0;
@@ -322,58 +323,99 @@ const initFerrofluid = () => {
     const bounds = host.getBoundingClientRect();
     pointer.targetX = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
     pointer.targetY = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+    pointer.active = true;
   }, { passive: true });
+  host.addEventListener('pointerdown', () => {
+    pointer.hold = true;
+    ripples.push({ x: pointer.targetX, y: pointer.targetY, age: 0 });
+  });
+  host.addEventListener('pointerup', () => { pointer.hold = false; });
   host.addEventListener('pointerleave', () => {
+    pointer.active = false;
+    pointer.hold = false;
     pointer.targetX = 0.5;
     pointer.targetY = 0.5;
   }, { passive: true });
 
   const draw = (time = 0) => {
-    pointer.x += (pointer.targetX - pointer.x) * 0.1;
-    pointer.y += (pointer.targetY - pointer.y) * 0.1;
+    pointer.x += (pointer.targetX - pointer.x) * 0.08;
+    pointer.y += (pointer.targetY - pointer.y) * 0.08;
     context.clearRect(0, 0, width, height);
-    context.fillStyle = '#2e0740';
+    context.fillStyle = '#120F17';
     context.fillRect(0, 0, width, height);
+    const seconds = time * 0.001;
+    const streamSpeed = reducedMotion ? 0 : seconds * 0.055;
+
+    context.save();
     context.globalCompositeOperation = 'screen';
-
-    blobs.forEach((blob, index) => {
-      const flow = reducedMotion ? 0 : (time * 0.000035 * 0.5) % 1.35;
-      const noise = reducedMotion ? 0 : Math.sin(time * 0.00045 + blob.phase) * 0.06;
-      const distance = Math.hypot(pointer.x - blob.x, pointer.y - blob.y);
-      const influence = Math.max(0, 1 - distance / 0.3) * 0.1;
-      const centerX = width * (blob.x + (pointer.x - 0.5) * influence + noise * 0.3);
-      const centerY = height * (((blob.y + flow + noise) % 1.35) - 0.14 + (pointer.y - 0.5) * influence);
-      const radius = Math.min(width, height) * blob.radius;
-
-      context.save();
-      context.translate(centerX, centerY);
-      context.rotate(noise * 1.8);
-      context.scale(blob.scaleX, blob.scaleY);
-      const gradient = context.createRadialGradient(0, 0, radius * 0.02, 0, 0, radius);
-      gradient.addColorStop(0, blob.color);
-      gradient.addColorStop(0.38, index % 2 ? 'rgba(219, 1, 231, .36)' : 'rgba(67, 3, 73, .5)');
-      gradient.addColorStop(0.78, 'rgba(46, 7, 64, .34)');
-      gradient.addColorStop(1, 'rgba(46, 7, 64, 0)');
-      context.fillStyle = gradient;
-      context.shadowColor = 'rgba(219, 1, 231, .34)';
-      context.shadowBlur = radius * 0.28 * 2;
+    context.lineCap = 'round';
+    for (let stream = 0; stream < 4; stream += 1) {
       context.beginPath();
-      for (let point = 0; point <= 28; point += 1) {
-        const radians = point / 28 * Math.PI * 2;
-        const edgeNoise = 1 + Math.sin(radians * 3 + blob.phase + time * 0.00035) * 0.08;
-        const x = Math.cos(radians) * radius * edgeNoise;
-        const y = Math.sin(radians) * radius * edgeNoise;
+      for (let point = 0; point <= 20; point += 1) {
+        const progress = point / 20;
+        const x = width * (0.5 + Math.sin(progress * 4.4 + stream * 1.7 + seconds * 0.22) * 0.23);
+        const y = height * (progress * 1.2 - 0.1);
         if (point === 0) context.moveTo(x, y); else context.lineTo(x, y);
       }
+      context.strokeStyle = stream % 2 ? 'rgba(168, 85, 247, .08)' : 'rgba(137, 106, 189, .12)';
+      context.lineWidth = width * 0.035;
+      context.shadowColor = '#A855F7';
+      context.shadowBlur = 26;
+      context.stroke();
+    }
+
+    shards.forEach((shard, index) => {
+      const progress = (shard.phase + streamSpeed) % 1.2 - 0.1;
+      const turbulence = reducedMotion ? 0 : Math.sin(seconds * 0.9 + shard.offset) * 0.035;
+      let x = width * (0.5 + Math.sin(progress * 6.2 + shard.offset) * 0.32 + turbulence);
+      let y = height * progress;
+      const dx = x - pointer.x * width;
+      const dy = y - pointer.y * height;
+      const distance = Math.hypot(dx, dy);
+      const radius = Math.min(width, height) * 0.3;
+      if (pointer.active && distance < radius) {
+        const force = (1 - distance / radius) * (pointer.hold ? -0.24 : 0.16);
+        x += (dx / Math.max(1, distance)) * width * force;
+        y += (dy / Math.max(1, distance)) * height * force;
+      }
+
+      const depth = shard.depth * (0.74 + Math.sin(shard.offset + seconds * 0.5) * 0.16);
+      const length = shard.length * depth;
+      const shardWidth = shard.width * depth;
+      const rotation = shard.tilt + Math.sin(seconds * 0.7 + shard.offset) * 0.5;
+      context.save();
+      context.translate(x, y);
+      context.rotate(rotation);
+      const gradient = context.createLinearGradient(-length, 0, length, 0);
+      gradient.addColorStop(0, 'rgba(137, 106, 189, .08)');
+      gradient.addColorStop(0.52, index % 5 === 0 ? 'rgba(168, 85, 247, .9)' : 'rgba(137, 106, 189, .66)');
+      gradient.addColorStop(1, 'rgba(216, 190, 255, .08)');
+      context.fillStyle = gradient;
+      context.shadowColor = 'rgba(168, 85, 247, .7)';
+      context.shadowBlur = 10 + depth * 9;
+      context.beginPath();
+      context.moveTo(-length * 0.68, 0);
+      context.lineTo(-length * 0.08, -shardWidth);
+      context.lineTo(length * 0.74, -shardWidth * 0.38);
+      context.lineTo(length, 0);
+      context.lineTo(length * 0.3, shardWidth * 0.78);
       context.closePath();
       context.fill();
-      context.lineWidth = Math.max(1, radius * 0.035);
-      context.strokeStyle = 'rgba(244, 205, 255, .3)';
-      context.stroke();
       context.restore();
     });
 
-    context.globalCompositeOperation = 'source-over';
+    ripples.forEach((ripple) => {
+      ripple.age += reducedMotion ? 0 : 0.016;
+      const progress = Math.min(1, ripple.age / 1.2);
+      context.beginPath();
+      context.arc(ripple.x * width, ripple.y * height, progress * Math.min(width, height) * 0.24, 0, Math.PI * 2);
+      context.strokeStyle = `rgba(168, 85, 247, ${0.36 * (1 - progress)})`;
+      context.lineWidth = 2;
+      context.stroke();
+    });
+    while (ripples.length && ripples[0].age >= 1.2) ripples.shift();
+    context.restore();
+
     if (!reducedMotion) frame = window.requestAnimationFrame(draw);
   };
 
@@ -478,7 +520,7 @@ const init = () => {
   setText('owner-name', data.ownerName);
   setText('hero-kicker', data.hero.kicker);
   initCircularText();
-  initFerrofluid();
+  initAeroShards();
   setText('hero-copy', data.hero.copy);
   setText('about-primary', data.about.primary);
   setText('about-secondary', data.about.secondary);
