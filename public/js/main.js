@@ -236,8 +236,8 @@ const initCircularText = () => {
     context.clearRect(0, 0, width, height);
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) * 0.38;
-    const fontSize = Math.max(20, Math.min(38, radius * 0.3));
+    const radius = Math.min(width, height) * 0.42;
+    const fontSize = Math.max(24, Math.min(46, radius * 0.34));
 
     context.save();
     context.translate(centerX, centerY);
@@ -257,7 +257,7 @@ const initCircularText = () => {
       context.restore();
     });
 
-    context.font = `900 ${Math.max(28, Math.min(54, radius * 0.45))}px system-ui, sans-serif`;
+    context.font = `900 ${Math.max(42, Math.min(78, radius * 0.68))}px system-ui, sans-serif`;
     context.fillStyle = '#f5f4f6';
     context.shadowColor = 'rgba(219, 1, 231, .58)';
     context.shadowBlur = 22;
