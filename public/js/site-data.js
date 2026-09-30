@@ -9,7 +9,7 @@ window.SITE_DATA = {
   availability: 'Prototype / v1.0',
   hero: {
     kicker: 'AI COMPANION / HARDWARE PROJECT',
-    title: '不只是桌宠，更是懂你的 AI 陪伴者。',
+    title: 'UiKi',
     copy:
       'Uiki 是一个面向年轻人的方形桌面陪伴设备。它用 AI 对话、OLED 表情和灯光，把温柔陪伴放到你的桌面上。',
   },

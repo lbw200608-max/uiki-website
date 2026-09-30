@@ -202,14 +202,21 @@ const initNavigation = () => {
   });
 };
 
-const initParticleText = () => {
-  const canvas = document.querySelector('[data-particle-text]');
+const initStrokeText = () => {
+  const canvas = document.querySelector('[data-stroke-text]');
   if (!canvas) return;
   const context = canvas.getContext('2d');
   if (!context) return;
 
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  let particles = [];
+  const text = 'UiKi';
+  const strokeColor = '#A78BFA';
+  const fillColor = '#f5f4f6';
+  const drawDuration = 1600;
+  const fillDelay = 200;
+  const stagger = 50;
+  const letterSpacing = -4;
+  let letters = [];
   let width = 0;
   let height = 0;
   let frame = 0;
@@ -223,61 +230,130 @@ const initParticleText = () => {
     canvas.height = height * ratio;
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
 
-    const mask = document.createElement('canvas');
-    mask.width = width;
-    mask.height = height;
-    const maskContext = mask.getContext('2d');
-    if (!maskContext) return;
-
-    const fontSize = Math.min(height * 0.78, width * 0.27);
-    maskContext.fillStyle = '#fff';
-    maskContext.font = `900 ${fontSize}px system-ui, sans-serif`;
-    maskContext.textBaseline = 'middle';
-    const text = 'UiKi';
-    const textWidth = maskContext.measureText(text).width;
-    maskContext.fillText(text, (width - textWidth) / 2, height * 0.54);
-
-    const pixels = maskContext.getImageData(0, 0, width, height).data;
-    const targets = [];
-    for (let y = 0; y < height; y += 4) {
-      for (let x = 0; x < width; x += 4) {
-        if (pixels[(y * width + x) * 4 + 3] > 120) targets.push({ x, y });
-      }
-    }
-
-    const stride = Math.max(1, Math.ceil(targets.length / 1800));
-    particles = targets.filter((_, index) => index % stride === 0).map(({ x, y }) => ({
-      x: x + (Math.random() - 0.5) * 34,
-      y: y + (Math.random() - 0.5) * 34,
-      targetX: x,
-      targetY: y,
-      phase: Math.random() * Math.PI * 2,
-      size: 0.7 + Math.random() * 1.2,
-    }));
+    const fontSize = Math.min(128, height * 0.84, width * 0.29);
+    context.font = `800 ${fontSize}px system-ui, sans-serif`;
+    context.textBaseline = 'middle';
+    const widths = [...text].map((letter) => context.measureText(letter).width);
+    const totalWidth = widths.reduce((sum, letterWidth) => sum + letterWidth, 0) + letterSpacing * (text.length - 1);
+    let x = (width - totalWidth) / 2;
+    letters = [...text].map((letter, index) => {
+      const item = { letter, x, width: widths[index], index };
+      x += widths[index] + letterSpacing;
+      return item;
+    });
   };
 
   const draw = (time = 0) => {
     context.clearRect(0, 0, width, height);
-    particles.forEach((particle, index) => {
-      particle.x += (particle.targetX - particle.x) * 0.08;
-      particle.y += (particle.targetY - particle.y) * 0.08;
-      const drift = reducedMotion ? 0 : Math.sin(time * 0.0016 + particle.phase) * 1.1;
-      const alpha = 0.64 + (Math.sin(time * 0.002 + index) + 1) * 0.16;
-      context.beginPath();
-      context.fillStyle = index % 7 === 0 ? `rgba(255, 248, 255, ${alpha})` : `rgba(202, 181, 255, ${alpha})`;
-      context.arc(particle.x + drift, particle.y + drift * 0.45, particle.size, 0, Math.PI * 2);
-      context.fill();
+    const elapsed = reducedMotion ? drawDuration + fillDelay : Math.min(time - startTime, drawDuration + 500);
+    context.font = `800 ${Math.min(128, height * 0.84, width * 0.29)}px system-ui, sans-serif`;
+    context.textBaseline = 'middle';
+    letters.forEach(({ letter, x, width: letterWidth, index }) => {
+      const progress = Math.max(0, Math.min(1, (elapsed - index * stagger) / drawDuration));
+      const eased = 1 - Math.pow(1 - progress, 2);
+      const fillProgress = Math.max(0, Math.min(1, (elapsed - index * stagger - fillDelay) / 550));
+      context.save();
+      context.lineWidth = 1.4;
+      context.strokeStyle = strokeColor;
+      context.globalAlpha = eased;
+      context.strokeText(letter, x, height * 0.54);
+      if (fillProgress > 0) {
+        context.beginPath();
+        context.rect(x - 4, 0, letterWidth * fillProgress + 8, height);
+        context.clip();
+        context.fillStyle = fillColor;
+        context.globalAlpha = fillProgress;
+        context.fillText(letter, x, height * 0.54);
+      }
+      context.restore();
     });
+    if (!reducedMotion && elapsed < drawDuration + 500) frame = window.requestAnimationFrame(draw);
+  };
+
+  let startTime = 0;
+
+  const render = () => {
+    window.cancelAnimationFrame(frame);
+    rebuild();
+    startTime = performance.now();
+    draw(reducedMotion ? drawDuration : 0);
+  };
+
+  if (window.ResizeObserver) new ResizeObserver(render).observe(canvas);
+  else window.addEventListener('resize', render, { passive: true });
+  render();
+};
+
+const initLightRays = () => {
+  const canvas = document.querySelector('[data-light-rays]');
+  const host = canvas?.closest('.hero-media');
+  if (!canvas || !host) return;
+  const context = canvas.getContext('2d');
+  if (!context) return;
+
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const pointer = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
+  let width = 0;
+  let height = 0;
+  let frame = 0;
+
+  const resize = () => {
+    const bounds = host.getBoundingClientRect();
+    const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+    width = Math.max(1, Math.round(bounds.width));
+    height = Math.max(1, Math.round(bounds.height));
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  };
+
+  host.addEventListener('pointermove', (event) => {
+    const bounds = host.getBoundingClientRect();
+    pointer.targetX = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    pointer.targetY = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+  }, { passive: true });
+
+  const draw = (time = 0) => {
+    pointer.x += (pointer.targetX - pointer.x) * 0.1;
+    pointer.y += (pointer.targetY - pointer.y) * 0.1;
+    context.clearRect(0, 0, width, height);
+    context.globalCompositeOperation = 'screen';
+
+    const originX = width * (0.5 + (pointer.x - 0.5) * 0.1);
+    for (let index = -7; index <= 7; index += 1) {
+      const ratio = index / 7;
+      const wave = reducedMotion ? 0 : Math.sin(time * 0.0007 + index * 1.7) * width * 0.012;
+      const startX = originX + index * width * 0.012;
+      const endX = originX + ratio * width * 0.68 + wave + (pointer.x - 0.5) * width * 0.1;
+      const rayWidth = width * (0.018 + (1 - Math.abs(ratio)) * 0.018);
+      const gradient = context.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, 'rgba(224, 9, 227, 0.02)');
+      gradient.addColorStop(0.28, 'rgba(224, 9, 227, 0.2)');
+      gradient.addColorStop(0.82, 'rgba(167, 139, 250, 0.06)');
+      gradient.addColorStop(1, 'rgba(224, 9, 227, 0)');
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.moveTo(startX - rayWidth * 0.24, 0);
+      context.lineTo(startX + rayWidth * 0.24, 0);
+      context.lineTo(endX + rayWidth, height * (1.05 + pointer.y * 0.08));
+      context.lineTo(endX - rayWidth, height * (1.05 + pointer.y * 0.08));
+      context.closePath();
+      context.fill();
+    }
+
+    context.globalCompositeOperation = 'source-over';
     if (!reducedMotion) frame = window.requestAnimationFrame(draw);
   };
 
   const render = () => {
     window.cancelAnimationFrame(frame);
-    rebuild();
+    resize();
     draw();
   };
 
-  if (window.ResizeObserver) new ResizeObserver(render).observe(canvas);
+  if (window.ResizeObserver) new ResizeObserver(render).observe(host);
   else window.addEventListener('resize', render, { passive: true });
   render();
 };
@@ -347,7 +423,6 @@ const initDemoAuth = () => {
   })();
 
   const open = () => {
-    form.classList.remove('is-authenticated');
     if (saved && nameInput && emailInput) {
       nameInput.value = saved.name || '';
       emailInput.value = saved.email || '';
@@ -362,9 +437,8 @@ const initDemoAuth = () => {
     const user = { name: nameInput?.value.trim(), email: emailInput?.value.trim() };
     localStorage.setItem('uiki-demo-user', JSON.stringify(user));
     saved = user;
-    form.classList.add('is-authenticated');
-    if (status) status.textContent = `登录成功：${user.email}`;
-    window.setTimeout(() => { dialog.close(); document.querySelector('#ai')?.scrollIntoView({ behavior: 'smooth' }); }, 1000);
+    if (status) status.textContent = `演示账号已保存：${user.name}`;
+    window.setTimeout(() => { dialog.close(); document.querySelector('#ai')?.scrollIntoView({ behavior: 'smooth' }); }, 240);
   });
 };
 
@@ -373,7 +447,8 @@ const init = () => {
 
   setText('owner-name', data.ownerName);
   setText('hero-kicker', data.hero.kicker);
-  initParticleText();
+  initStrokeText();
+  initLightRays();
   setText('hero-copy', data.hero.copy);
   setText('about-primary', data.about.primary);
   setText('about-secondary', data.about.secondary);
